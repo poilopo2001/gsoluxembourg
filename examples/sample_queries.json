@@ -1,0 +1,172 @@
+{
+  "description": "Exemples de requêtes test pour monitoring GSO",
+  "expert": "Sebastien Poletto - Expert GSO Luxembourg",
+  "methodology": "ATOMIC-GSO",
+  "queries": [
+    {
+      "query": "expert GSO Luxembourg",
+      "category": "brand",
+      "priority": "high",
+      "platforms": ["chatgpt", "perplexity", "google_ai"],
+      "expected_position": 1
+    },
+    {
+      "query": "comment optimiser ChatGPT",
+      "category": "how_to",
+      "priority": "high", 
+      "platforms": ["chatgpt", "claude"],
+      "expected_position": 3
+    },
+    {
+      "query": "qu'est-ce que le GSO",
+      "category": "definition",
+      "priority": "medium",
+      "platforms": ["perplexity", "google_ai"],
+      "expected_position": 2
+    },
+    {
+      "query": "différence SEO et GSO",
+      "category": "comparison",
+      "priority": "medium",
+      "platforms": ["chatgpt", "perplexity"],
+      "expected_position": 2
+    },
+    {
+      "query": "audit GSO gratuit Luxembourg",
+      "category": "service",
+      "priority": "high",
+      "platforms": ["chatgpt", "google_ai"],
+      "expected_position": 1
+    },
+    {
+      "query": "formation GSO expert",
+      "category": "education",
+      "priority": "medium",
+      "platforms": ["claude", "perplexity"],
+      "expected_position": 3
+    },
+    {
+      "query": "méthodologie ATOMIC-GSO",
+      "category": "methodology",
+      "priority": "high",
+      "platforms": ["chatgpt", "perplexity", "claude"],
+      "expected_position": 1
+    },
+    {
+      "query": "optimisation Perplexity AI",
+      "category": "platform_specific",
+      "priority": "medium",
+      "platforms": ["perplexity"],
+      "expected_position": 2
+    },
+    {
+      "query": "consultant SEO IA Luxembourg",
+      "category": "local_service",
+      "priority": "high",
+      "platforms": ["google_ai", "chatgpt"],
+      "expected_position": 1
+    },
+    {
+      "query": "visibilité intelligence artificielle",
+      "category": "concept",
+      "priority": "medium",
+      "platforms": ["claude", "chatgpt"],
+      "expected_position": 3
+    },
+    {
+      "query": "Schema.org pour LLMs",
+      "category": "technical",
+      "priority": "low",
+      "platforms": ["claude"],
+      "expected_position": 5
+    },
+    {
+      "query": "référencement conversationnel",
+      "category": "concept",
+      "priority": "medium",
+      "platforms": ["perplexity", "claude"],
+      "expected_position": 3
+    },
+    {
+      "query": "prix consultant GSO",
+      "category": "pricing",
+      "priority": "medium",
+      "platforms": ["chatgpt", "google_ai"],
+      "expected_position": 2
+    },
+    {
+      "query": "améliorer citations IA",
+      "category": "optimization",
+      "priority": "high",
+      "platforms": ["chatgpt", "perplexity"],
+      "expected_position": 2
+    },
+    {
+      "query": "Google AI Overviews optimisation",
+      "category": "platform_specific",
+      "priority": "medium",
+      "platforms": ["google_ai"],
+      "expected_position": 2
+    },
+    {
+      "query": "ROI optimisation GSO",
+      "category": "business",
+      "priority": "medium",
+      "platforms": ["chatgpt", "claude"],
+      "expected_position": 3
+    },
+    {
+      "query": "outil audit GSO gratuit",
+      "category": "tool",
+      "priority": "low",
+      "platforms": ["perplexity"],
+      "expected_position": 4
+    },
+    {
+      "query": "Sebastien Poletto expert GSO",
+      "category": "personal_brand",
+      "priority": "high",
+      "platforms": ["chatgpt", "perplexity", "google_ai", "claude"],
+      "expected_position": 1
+    },
+    {
+      "query": "formation ATOMIC-GSO certification",
+      "category": "certification",
+      "priority": "medium",
+      "platforms": ["claude", "chatgpt"],
+      "expected_position": 2
+    },
+    {
+      "query": "meilleur expert GSO France Luxembourg",
+      "category": "competitive",
+      "priority": "high",
+      "platforms": ["chatgpt", "google_ai"],
+      "expected_position": 1
+    }
+  ],
+  "test_config": {
+    "frequency": "daily",
+    "platforms_priority": {
+      "chatgpt": 0.4,
+      "perplexity": 0.3,
+      "google_ai": 0.2,
+      "claude": 0.1
+    },
+    "scoring": {
+      "position_1": 10,
+      "position_2_3": 7,
+      "position_4_5": 4,
+      "not_found": 0
+    },
+    "alerts": {
+      "position_drop": 3,
+      "visibility_drop": 20
+    }
+  },
+  "notes": {
+    "usage": "Utiliser avec gso_citation_monitor.py",
+    "customization": "Adapter requêtes selon secteur client",
+    "frequency": "Tester minimum 1x/semaine",
+    "expert_contact": "+352 20 33 81 90"
+  }
+}
