@@ -25,6 +25,11 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 import time
+import sys
+import os
+
+# Ajoute le chemin parent pour importer modules locaux
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import typer
 from rich.console import Console
@@ -33,6 +38,10 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
 import pandas as pd
+
+# Import modules GSO
+from config.gso_config import config as gso_config
+from utils.api_clients import AISearchManager
 
 console = Console()
 

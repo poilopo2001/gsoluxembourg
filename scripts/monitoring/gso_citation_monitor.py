@@ -18,25 +18,24 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from pathlib import Path
+import sys
+import os
 
-import requests
+# Ajoute le chemin parent pour importer modules locaux
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
 from rich.progress import track
 
+# Import modules GSO
+from config.gso_config import config as gso_config
+from utils.api_clients import AISearchManager, SearchResult
+
 console = Console()
 
-@dataclass
-class CitationResult:
-    """Structure résultat de citation"""
-    platform: str
-    query: str
-    position: int
-    score: int
-    content_snippet: str
-    url: str
-    timestamp: datetime
+# Utilise SearchResult de api_clients au lieu de CitationResult
     
 class GSACitationMonitor:
     """
@@ -51,9 +50,13 @@ class GSACitationMonitor:
     
     def __init__(self, domain: str, config_path: str = None):
         self.domain = domain
-        self.config = self._load_config(config_path)
+        self.config = gso_config  # Utilise config globale
         self.results_history = []
         self.setup_logging()
+        
+        # Initialise gestionnaire API
+        demo_mode = os.getenv('GSO_MODE', 'demo') == 'demo'
+        self.api_manager = AISearchManager(demo_mode=demo_mode)
         
     def setup_logging(self):
         """Configuration logging avancé"""
@@ -67,35 +70,11 @@ class GSACitationMonitor:
         )
         self.logger = logging.getLogger(__name__)
         
-    def _load_config(self, config_path: str) -> Dict:
-        """Charge configuration monitoring"""
-        default_config = {
-            "scoring": {
-                "first_position": 10,
-                "top_3": 7, 
-                "others": 4,
-                "not_found": 0
-            },
-            "platforms": {
-                "chatgpt": {"enabled": True, "weight": 0.4},
-                "perplexity": {"enabled": True, "weight": 0.3},
-                "google_ai": {"enabled": True, "weight": 0.2},
-                "claude": {"enabled": True, "weight": 0.1}
-            },
-            "alerts": {
-                "drop_threshold": 20,  # % baisse pour alerte
-                "email_notifications": True
-            }
-        }
-        
-        if config_path and Path(config_path).exists():
-            with open(config_path, 'r', encoding='utf-8') as f:
-                user_config = json.load(f)
-                default_config.update(user_config)
-                
-        return default_config
+    def _get_scoring_config(self) -> Dict:
+        """Récupère config scoring depuis config globale"""
+        return self.config.scoring['citation_positions']
     
-    async def test_chatgpt_visibility(self, queries: List[str]) -> List[CitationResult]:
+    async def test_chatgpt_visibility(self, queries: List[str]) -> List[SearchResult]:
         """
         Test visibilité ChatGPT - Méthode FLIP©
         F.L.I.P = Format, Links, Intent, Position
@@ -105,9 +84,15 @@ class GSACitationMonitor:
         
         for query in track(queries, description="Analyse ChatGPT"):
             try:
-                # Simulation API ChatGPT (remplacer par vraie API)
-                result = await self._simulate_chatgpt_search(query)
-                results.append(result)
+                # Utilise API client réel
+                platform_results = await self.api_manager.search_all_platforms(
+                    query=query,
+                    domain=self.domain,
+                    platforms=['chatgpt']
+                )
+                
+                if 'chatgpt' in platform_results and platform_results['chatgpt']:
+                    results.extend(platform_results['chatgpt'])
                 
                 # Délai entre requêtes (respect rate limits)
                 await asyncio.sleep(2)
@@ -117,15 +102,22 @@ class GSACitationMonitor:
                 
         return results
     
-    async def test_perplexity_visibility(self, queries: List[str]) -> List[CitationResult]:
+    async def test_perplexity_visibility(self, queries: List[str]) -> List[SearchResult]:
         """Test visibilité Perplexity AI"""
         results = []
         console.print("[bold green]🔍 Test Perplexity AI...[/bold green]")
         
         for query in track(queries, description="Analyse Perplexity"):
             try:
-                result = await self._simulate_perplexity_search(query)
-                results.append(result)
+                platform_results = await self.api_manager.search_all_platforms(
+                    query=query,
+                    domain=self.domain,
+                    platforms=['perplexity']
+                )
+                
+                if 'perplexity' in platform_results and platform_results['perplexity']:
+                    results.extend(platform_results['perplexity'])
+                    
                 await asyncio.sleep(2)
                 
             except Exception as e:
@@ -133,15 +125,22 @@ class GSACitationMonitor:
                 
         return results
     
-    async def test_google_ai_visibility(self, queries: List[str]) -> List[CitationResult]:
+    async def test_google_ai_visibility(self, queries: List[str]) -> List[SearchResult]:
         """Test visibilité Google AI Overviews"""
         results = []
         console.print("[bold yellow]🔍 Test Google AI Overviews...[/bold yellow]")
         
         for query in track(queries, description="Analyse Google AI"):
             try:
-                result = await self._simulate_google_ai_search(query)
-                results.append(result)
+                platform_results = await self.api_manager.search_all_platforms(
+                    query=query,
+                    domain=self.domain,
+                    platforms=['google_ai']
+                )
+                
+                if 'google_ai' in platform_results and platform_results['google_ai']:
+                    results.extend(platform_results['google_ai'])
+                    
                 await asyncio.sleep(2)
                 
             except Exception as e:
@@ -149,15 +148,22 @@ class GSACitationMonitor:
                 
         return results
     
-    async def test_claude_visibility(self, queries: List[str]) -> List[CitationResult]:
+    async def test_claude_visibility(self, queries: List[str]) -> List[SearchResult]:
         """Test visibilité Claude AI"""
         results = []
         console.print("[bold purple]🤖 Test Claude AI...[/bold purple]")
         
         for query in track(queries, description="Analyse Claude"):
             try:
-                result = await self._simulate_claude_search(query)
-                results.append(result)
+                platform_results = await self.api_manager.search_all_platforms(
+                    query=query,
+                    domain=self.domain,
+                    platforms=['claude']
+                )
+                
+                if 'claude' in platform_results and platform_results['claude']:
+                    results.extend(platform_results['claude'])
+                    
                 await asyncio.sleep(2)
                 
             except Exception as e:
@@ -165,85 +171,22 @@ class GSACitationMonitor:
                 
         return results
     
-    async def _simulate_chatgpt_search(self, query: str) -> CitationResult:
-        """Simulation recherche ChatGPT (à remplacer par vraie API)"""
-        # Ici, implémentation réelle API ChatGPT
-        # Pour la démo, simulation de résultat
-        
-        import random
-        positions = [1, 2, 3, 4, 5, 0]  # 0 = non trouvé
-        position = random.choice(positions)
-        
-        score = self._calculate_position_score(position)
-        
-        return CitationResult(
-            platform="ChatGPT",
-            query=query,
-            position=position,
-            score=score,
-            content_snippet=f"Snippet simulé pour {query}",
-            url=f"https://{self.domain}/page-exemple",
-            timestamp=datetime.now()
-        )
+    # Méthodes _simulate_* supprimées - utilise maintenant api_clients
     
-    async def _simulate_perplexity_search(self, query: str) -> CitationResult:
-        """Simulation recherche Perplexity"""
-        import random
-        position = random.choice([1, 2, 3, 4, 5, 0])
-        score = self._calculate_position_score(position)
-        
-        return CitationResult(
-            platform="Perplexity",
-            query=query,
-            position=position,
-            score=score,
-            content_snippet=f"Perplexity snippet pour {query}",
-            url=f"https://{self.domain}/page-exemple",
-            timestamp=datetime.now()
-        )
-    
-    async def _simulate_google_ai_search(self, query: str) -> CitationResult:
-        """Simulation recherche Google AI"""
-        import random
-        position = random.choice([1, 2, 3, 4, 5, 0])
-        score = self._calculate_position_score(position)
-        
-        return CitationResult(
-            platform="Google AI",
-            query=query,
-            position=position,
-            score=score,
-            content_snippet=f"Google AI snippet pour {query}",
-            url=f"https://{self.domain}/page-exemple",
-            timestamp=datetime.now()
-        )
-    
-    async def _simulate_claude_search(self, query: str) -> CitationResult:
-        """Simulation recherche Claude"""
-        import random
-        position = random.choice([1, 2, 3, 4, 5, 0])
-        score = self._calculate_position_score(position)
-        
-        return CitationResult(
-            platform="Claude",
-            query=query,
-            position=position,
-            score=score,
-            content_snippet=f"Claude snippet pour {query}",
-            url=f"https://{self.domain}/page-exemple",
-            timestamp=datetime.now()
-        )
-    
-    def _calculate_position_score(self, position: int) -> int:
+    def _calculate_position_score(self, position: int) -> float:
         """Calcul score selon position - Méthodologie ATOMIC-GSO©"""
+        scoring = self._get_scoring_config()
+        
         if position == 1:
-            return self.config["scoring"]["first_position"]
+            return float(scoring["first"])
         elif position <= 3:
-            return self.config["scoring"]["top_3"]
-        elif position > 3:
-            return self.config["scoring"]["others"]
+            return float(scoring["top_3"])
+        elif position <= 5:
+            return float(scoring["top_5"])
+        elif position > 5:
+            return float(scoring["mentioned"])
         else:
-            return self.config["scoring"]["not_found"]
+            return float(scoring["not_found"])
     
     async def run_full_monitoring(self, queries: List[str]) -> Dict:
         """Exécution monitoring complet - Framework ATOMIC-GSO©"""
@@ -254,21 +197,32 @@ class GSACitationMonitor:
         all_results = []
         
         # Test sur toutes les plateformes
-        if self.config["platforms"]["chatgpt"]["enabled"]:
-            chatgpt_results = await self.test_chatgpt_visibility(queries)
-            all_results.extend(chatgpt_results)
+        platforms_enabled = []
+        for platform_name, platform_config in self.config.platforms.items():
+            if platform_config.enabled:
+                platforms_enabled.append(platform_name)
+        
+        # Recherche multi-plateformes optimisée
+        if platforms_enabled:
+            console.print(f"[bold cyan]🚀 Test sur {len(platforms_enabled)} plateformes activées[/bold cyan]")
             
-        if self.config["platforms"]["perplexity"]["enabled"]:
-            perplexity_results = await self.test_perplexity_visibility(queries)
-            all_results.extend(perplexity_results)
-            
-        if self.config["platforms"]["google_ai"]["enabled"]:
-            google_results = await self.test_google_ai_visibility(queries)
-            all_results.extend(google_results)
-            
-        if self.config["platforms"]["claude"]["enabled"]:
-            claude_results = await self.test_claude_visibility(queries)
-            all_results.extend(claude_results)
+            for query in queries:
+                try:
+                    results = await self.api_manager.search_all_platforms(
+                        query=query,
+                        domain=self.domain,
+                        platforms=platforms_enabled
+                    )
+                    
+                    # Collecte résultats de toutes plateformes
+                    for platform, platform_results in results.items():
+                        all_results.extend(platform_results)
+                    
+                    # Délai entre requêtes
+                    await asyncio.sleep(1)
+                    
+                except Exception as e:
+                    self.logger.error(f"Erreur recherche multi-plateformes pour '{query}': {e}")
         
         # Calcul scores et métriques
         analysis = self._analyze_results(all_results)
@@ -281,7 +235,7 @@ class GSACitationMonitor:
         
         return analysis
     
-    def _analyze_results(self, results: List[CitationResult]) -> Dict:
+    def _analyze_results(self, results: List[SearchResult]) -> Dict:
         """Analyse complète résultats GSO"""
         if not results:
             return {"error": "Aucun résultat à analyser"}
@@ -293,14 +247,16 @@ class GSACitationMonitor:
                 'query': r.query,
                 'position': r.position,
                 'score': r.score,
-                'found': r.position > 0
+                'found': r.position > 0,
+                'snippet': r.snippet
             } for r in results
         ])
         
         # Métriques globales
         total_score = df['score'].sum()
-        max_possible = len(results) * self.config["scoring"]["first_position"]
-        visibility_percentage = (total_score / max_possible) * 100
+        scoring_config = self._get_scoring_config()
+        max_possible = len(results) * scoring_config["first"]
+        visibility_percentage = (total_score / max_possible) * 100 if max_possible > 0 else 0
         
         # Métriques par plateforme
         platform_stats = df.groupby('platform').agg({
@@ -370,7 +326,7 @@ class GSACitationMonitor:
         
         return recommendations
     
-    def _generate_report(self, analysis: Dict, results: List[CitationResult]):
+    def _generate_report(self, analysis: Dict, results: List[SearchResult]):
         """Génération rapport visuel"""
         console.print("\n" + "="*60)
         console.print("[bold cyan]📊 RAPPORT MONITORING GSO[/bold cyan]")
@@ -413,10 +369,18 @@ class GSACitationMonitor:
             console.print(f"{i}. {rec}")
         
         console.print("\n[bold cyan]📞 Support Expert GSO[/bold cyan]")
-        console.print("📧 contact@seo-ia.lu | 📱 +352 20 33 81 90")
-        console.print("🌐 https://seo-ia.lu/audit-gratuit")
+        console.print(f"📧 {self.config.expert.email} | 📱 {self.config.expert.phone}")
+        console.print(f"🌐 {self.config.expert.website}/audit-gratuit")
         
-    def _save_results(self, results: List[CitationResult]):
+        # Affiche mode démo si activé
+        demo_status = self.api_manager.get_demo_mode_status()
+        if any(demo_status.values()):
+            console.print("\n[yellow]⚠️ Mode démo activé pour certaines plateformes[/yellow]")
+            for platform, is_demo in demo_status.items():
+                if is_demo:
+                    console.print(f"  - {platform}: Mode démo (configurez API key pour résultats réels)")
+        
+    def _save_results(self, results: List[SearchResult]):
         """Sauvegarde résultats pour historique"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"gso_results_{self.domain}_{timestamp}.json"
@@ -430,7 +394,7 @@ class GSACitationMonitor:
                     "query": r.query,
                     "position": r.position,
                     "score": r.score,
-                    "content_snippet": r.content_snippet,
+                    "content_snippet": r.snippet,
                     "url": r.url,
                     "timestamp": r.timestamp.isoformat()
                 } for r in results

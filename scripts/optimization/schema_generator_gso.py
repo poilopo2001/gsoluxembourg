@@ -17,6 +17,11 @@ from typing import Dict, List, Optional, Union, Any
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from urllib.parse import urljoin
+import sys
+import os
+
+# Ajoute le chemin parent pour importer modules locaux
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import typer
 from rich.console import Console
@@ -24,20 +29,42 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.syntax import Syntax
 
+# Import configuration GSO
+from config.gso_config import config as gso_config
+
 console = Console()
 
 @dataclass
 class SchemaConfig:
     """Configuration Schema.org"""
     base_url: str
-    organization_name: str = "Sebastien Poletto GSO"
-    organization_url: str = "https://seo-ia.lu"
-    expert_name: str = "Sebastien Poletto"
-    location: str = "Luxembourg"
-    phone: str = "+352-20-33-81-90"
-    email: str = "contact@seo-ia.lu"
-    logo_url: str = "https://seo-ia.lu/logo.png"
-    image_url: str = "https://seo-ia.lu/seo-ia-headshot.png"
+    organization_name: str = None
+    organization_url: str = None
+    expert_name: str = None
+    location: str = None
+    phone: str = None
+    email: str = None
+    logo_url: str = None
+    image_url: str = None
+    
+    def __post_init__(self):
+        """Initialise avec config GSO si valeurs non fournies"""
+        if not self.organization_name:
+            self.organization_name = gso_config.expert.organization
+        if not self.organization_url:
+            self.organization_url = gso_config.expert.website
+        if not self.expert_name:
+            self.expert_name = gso_config.expert.name
+        if not self.location:
+            self.location = gso_config.expert.location
+        if not self.phone:
+            self.phone = gso_config.expert.phone
+        if not self.email:
+            self.email = gso_config.expert.email
+        if not self.logo_url:
+            self.logo_url = f"{gso_config.expert.website}/logo.png"
+        if not self.image_url:
+            self.image_url = f"{gso_config.expert.website}/seo-ia-headshot.png"
 
 class SchemaGeneratorGSO:
     """

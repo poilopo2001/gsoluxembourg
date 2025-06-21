@@ -13,14 +13,22 @@ Utilisation:
 import re
 import json
 import logging
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 from pathlib import Path
+import sys
+import os
+
+# Ajoute le chemin parent pour importer modules locaux
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import typer
 from rich.console import Console
 from rich.progress import Progress, track
 from rich.panel import Panel
+
+# Import configuration GSO
+from config.gso_config import config as gso_config
 
 console = Console()
 
@@ -53,8 +61,10 @@ class QAFormatConverter:
     
     def __init__(self):
         self.setup_logging()
+        self.config = gso_config
         self.citation_triggers = self._load_citation_triggers()
         self.question_patterns = self._load_question_patterns()
+        self.qa_config = self.config.optimization.get('qa_format', {})
         
     def setup_logging(self):
         """Configuration logging"""
@@ -87,9 +97,9 @@ class QAFormatConverter:
                 "Les experts recommandent ces 7 méthodes :"
             ],
             "autorite": [
-                "Sebastien Poletto, expert GSO Luxembourg, explique :",
+                f"{gso_config.expert.name}, {gso_config.expert.title}, explique :",
                 "Selon notre méthodologie ATOMIC-GSO© :",
-                "Notre expérience avec 80+ clients montre que :",
+                f"Notre expérience chez {gso_config.expert.organization} montre que :",
                 "Les techniques Princeton validées incluent :"
             ]
         }
