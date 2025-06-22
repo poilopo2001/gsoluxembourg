@@ -17,6 +17,20 @@ from datetime import datetime
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import sys
+from pathlib import Path
+
+# Ajouter le chemin parent pour importer les modules
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.rate_limiter import (
+    RateLimiter, RateLimitConfig, RetryHandler, 
+    rate_limited, with_retry, error_handler
+)
+from utils.validators import validate_domain, validate_search_query
+from utils.constants import (
+    Platform, POSITION_SCORES, AI_MODELS, API_ENDPOINTS,
+    SYSTEM_PROMPTS, CONTENT_LIMITS, RATE_LIMITS, API_TIMEOUTS
+)
 
 # Pour éviter dépendance si modules pas installés
 try:
@@ -46,15 +60,30 @@ class SearchResult:
 class AISearchClient(ABC):
     """Classe abstraite client recherche IA"""
     
-    def __init__(self, api_key: str = None, demo_mode: bool = False):
+    def __init__(self, api_key: str = None, demo_mode: bool = False, 
+                 rate_limit_config: Optional[RateLimitConfig] = None):
         self.api_key = api_key
         self.demo_mode = demo_mode or not api_key
         self.logger = logging.getLogger(self.__class__.__name__)
+        
+        # Configuration du rate limiting
+        self.rate_limiter = RateLimiter(rate_limit_config or RateLimitConfig())
+        self.retry_handler = RetryHandler()
         
     @abstractmethod
     async def search(self, query: str, domain: str) -> List[SearchResult]:
         """Recherche citations pour domaine"""
         pass
+    
+    async def _validate_inputs(self, query: str, domain: str) -> tuple[str, str]:
+        """Valide et nettoie les entrées"""
+        try:
+            clean_query = validate_search_query(query)
+            clean_domain = validate_domain(domain)
+            return clean_query, clean_domain
+        except ValueError as e:
+            self.logger.error(f"Validation échouée: {e}")
+            raise
     
     def _extract_position(self, content: str, domain: str) -> int:
         """Extrait position domaine dans contenu"""
@@ -70,8 +99,13 @@ class AISearchClient(ABC):
 class ChatGPTClient(AISearchClient):
     """Client recherche ChatGPT"""
     
+    @rate_limited(RateLimiter(RateLimitConfig(requests_per_minute=60)))
+    @with_retry()
     async def search(self, query: str, domain: str) -> List[SearchResult]:
         """Recherche via API ChatGPT ou mode démo"""
+        
+        # Valider les entrées
+        query, domain = await self._validate_inputs(query, domain)
         
         if self.demo_mode:
             return await self._demo_search(query, domain)
@@ -94,13 +128,14 @@ class ChatGPTClient(AISearchClient):
             """
             
             response = await client.chat.completions.create(
-                model="gpt-4-turbo-preview",
+                model=AI_MODELS[Platform.CHATGPT],
                 messages=[
-                    {"role": "system", "content": "Tu es un assistant qui cite toujours ses sources."},
+                    {"role": "system", "content": SYSTEM_PROMPTS["citation_search"]},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
-                max_tokens=500
+                max_tokens=500,
+                timeout=API_TIMEOUTS["search"]
             )
             
             content = response.choices[0].message.content
@@ -111,7 +146,7 @@ class ChatGPTClient(AISearchClient):
                 query=query,
                 position=position,
                 url=f"https://{domain}",
-                snippet=content[:200] + "...",
+                snippet=content[:CONTENT_LIMITS["snippet_length"]] + "...",
                 score=self._calculate_score(position),
                 timestamp=datetime.now(),
                 metadata={"model": "gpt-4", "tokens": response.usage.total_tokens}
@@ -119,6 +154,9 @@ class ChatGPTClient(AISearchClient):
             
         except Exception as e:
             self.logger.error(f"Erreur recherche ChatGPT : {e}")
+            # Enregistrer l'erreur pour monitoring
+            if not error_handler.handle_error("ChatGPT", e):
+                raise
             return await self._demo_search(query, domain)
     
     async def _demo_search(self, query: str, domain: str) -> List[SearchResult]:
@@ -150,14 +188,18 @@ class ChatGPTClient(AISearchClient):
     
     def _calculate_score(self, position: int) -> float:
         """Calcule score selon position"""
-        scores = {1: 10, 2: 7, 3: 7, 4: 4, 5: 4, 0: 0}
-        return scores.get(position, 0)
+        return POSITION_SCORES[Platform.CHATGPT].get(position, 0)
 
 class PerplexityClient(AISearchClient):
     """Client recherche Perplexity"""
     
+    @rate_limited(RateLimiter(RateLimitConfig(requests_per_minute=50)))
+    @with_retry()
     async def search(self, query: str, domain: str) -> List[SearchResult]:
         """Recherche via API Perplexity ou mode démo"""
+        
+        # Valider les entrées
+        query, domain = await self._validate_inputs(query, domain)
         
         if self.demo_mode:
             return await self._demo_search(query, domain)
@@ -170,7 +212,7 @@ class PerplexityClient(AISearchClient):
                 }
                 
                 data = {
-                    "model": "pplx-70b-online",
+                    "model": AI_MODELS[Platform.PERPLEXITY],
                     "messages": [
                         {
                             "role": "user",
@@ -203,7 +245,7 @@ class PerplexityClient(AISearchClient):
                             query=query,
                             position=position,
                             url=f"https://{domain}" if position > 0 else "",
-                            snippet=content[:200] + "...",
+                            snippet=content[:CONTENT_LIMITS["snippet_length"]] + "...",
                             score=self._calculate_score(position),
                             timestamp=datetime.now(),
                             metadata={"citations": len(citations), "model": "pplx-70b"}
@@ -213,6 +255,9 @@ class PerplexityClient(AISearchClient):
                         
         except Exception as e:
             self.logger.error(f"Erreur recherche Perplexity : {e}")
+            # Enregistrer l'erreur pour monitoring
+            if not error_handler.handle_error("Perplexity", e):
+                raise
             return await self._demo_search(query, domain)
     
     async def _demo_search(self, query: str, domain: str) -> List[SearchResult]:
@@ -235,14 +280,18 @@ class PerplexityClient(AISearchClient):
     
     def _calculate_score(self, position: int) -> float:
         """Score Perplexity - valorise plus les premières positions"""
-        scores = {1: 10, 2: 8, 3: 6, 4: 4, 5: 3, 0: 0}
-        return scores.get(position, 0)
+        return POSITION_SCORES[Platform.PERPLEXITY].get(position, 0)
 
 class GoogleAIClient(AISearchClient):
     """Client Google AI Overviews"""
     
+    @rate_limited(RateLimiter(RateLimitConfig(requests_per_minute=60)))
+    @with_retry()
     async def search(self, query: str, domain: str) -> List[SearchResult]:
         """Recherche Google AI"""
+        
+        # Valider les entrées
+        query, domain = await self._validate_inputs(query, domain)
         
         if self.demo_mode:
             return await self._demo_search(query, domain)
@@ -250,7 +299,7 @@ class GoogleAIClient(AISearchClient):
         try:
             # Google AI API (Gemini)
             async with aiohttp.ClientSession() as session:
-                url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+                url = f"{API_ENDPOINTS[Platform.GOOGLE_AI]}/{AI_MODELS[Platform.GOOGLE_AI]}:generateContent"
                 headers = {"Content-Type": "application/json"}
                 params = {"key": self.api_key}
                 
@@ -266,7 +315,8 @@ class GoogleAIClient(AISearchClient):
                     }
                 }
                 
-                async with session.post(url, headers=headers, params=params, json=data) as response:
+                async with session.post(url, headers=headers, params=params, json=data,
+                                       timeout=aiohttp.ClientTimeout(total=30)) as response:
                     if response.status == 200:
                         result = await response.json()
                         content = result['candidates'][0]['content']['parts'][0]['text']
@@ -277,7 +327,7 @@ class GoogleAIClient(AISearchClient):
                             query=query,
                             position=position,
                             url=f"https://{domain}" if position > 0 else "",
-                            snippet=content[:200] + "...",
+                            snippet=content[:CONTENT_LIMITS["snippet_length"]] + "...",
                             score=self._calculate_score(position),
                             timestamp=datetime.now(),
                             metadata={"model": "gemini-pro"}
@@ -285,6 +335,9 @@ class GoogleAIClient(AISearchClient):
                         
         except Exception as e:
             self.logger.error(f"Erreur Google AI : {e}")
+            # Enregistrer l'erreur pour monitoring
+            if not error_handler.handle_error("Google AI", e):
+                raise
             return await self._demo_search(query, domain)
     
     async def _demo_search(self, query: str, domain: str) -> List[SearchResult]:
@@ -306,14 +359,18 @@ class GoogleAIClient(AISearchClient):
         )]
     
     def _calculate_score(self, position: int) -> float:
-        scores = {1: 10, 2: 7, 3: 5, 4: 3, 5: 2, 0: 0}
-        return scores.get(position, 0)
+        return POSITION_SCORES[Platform.GOOGLE_AI].get(position, 0)
 
 class ClaudeAIClient(AISearchClient):
     """Client Claude AI"""
     
+    @rate_limited(RateLimiter(RateLimitConfig(requests_per_minute=40)))
+    @with_retry()
     async def search(self, query: str, domain: str) -> List[SearchResult]:
         """Recherche Claude AI"""
+        
+        # Valider les entrées
+        query, domain = await self._validate_inputs(query, domain)
         
         if self.demo_mode:
             return await self._demo_search(query, domain)
@@ -326,7 +383,7 @@ class ClaudeAIClient(AISearchClient):
             client = anthropic.AsyncAnthropic(api_key=self.api_key)
             
             response = await client.messages.create(
-                model="claude-3-opus-20240229",
+                model=AI_MODELS[Platform.CLAUDE],
                 max_tokens=500,
                 temperature=0.3,
                 messages=[{
@@ -343,7 +400,7 @@ class ClaudeAIClient(AISearchClient):
                 query=query,
                 position=position,
                 url=f"https://{domain}" if position > 0 else "",
-                snippet=content[:200] + "...",
+                snippet=content[:CONTENT_LIMITS["snippet_length"]] + "...",
                 score=self._calculate_score(position),
                 timestamp=datetime.now(),
                 metadata={"model": "claude-3-opus", "tokens": response.usage.output_tokens}
@@ -351,6 +408,9 @@ class ClaudeAIClient(AISearchClient):
             
         except Exception as e:
             self.logger.error(f"Erreur Claude AI : {e}")
+            # Enregistrer l'erreur pour monitoring
+            if not error_handler.handle_error("Claude", e):
+                raise
             return await self._demo_search(query, domain)
     
     async def _demo_search(self, query: str, domain: str) -> List[SearchResult]:
@@ -372,8 +432,7 @@ class ClaudeAIClient(AISearchClient):
         )]
     
     def _calculate_score(self, position: int) -> float:
-        scores = {1: 10, 2: 7, 3: 6, 4: 4, 5: 3, 0: 0}
-        return scores.get(position, 0)
+        return POSITION_SCORES[Platform.CLAUDE].get(position, 0)
 
 class AISearchManager:
     """Gestionnaire recherches multi-plateformes"""
@@ -387,21 +446,29 @@ class AISearchManager:
         """Initialise clients selon configuration"""
         clients = {}
         
+        # Configuration rate limiting par plateforme
+        rate_configs = {
+            "chatgpt": RateLimitConfig(requests_per_minute=60),
+            "perplexity": RateLimitConfig(requests_per_minute=50),
+            "google_ai": RateLimitConfig(requests_per_minute=60),
+            "claude": RateLimitConfig(requests_per_minute=40)
+        }
+        
         # ChatGPT
         api_key = os.getenv("OPENAI_API_KEY")
-        clients["chatgpt"] = ChatGPTClient(api_key, self.demo_mode)
+        clients["chatgpt"] = ChatGPTClient(api_key, self.demo_mode, rate_configs["chatgpt"])
         
         # Perplexity
         api_key = os.getenv("PERPLEXITY_API_KEY")
-        clients["perplexity"] = PerplexityClient(api_key, self.demo_mode)
+        clients["perplexity"] = PerplexityClient(api_key, self.demo_mode, rate_configs["perplexity"])
         
         # Google AI
         api_key = os.getenv("GOOGLE_AI_KEY")
-        clients["google_ai"] = GoogleAIClient(api_key, self.demo_mode)
+        clients["google_ai"] = GoogleAIClient(api_key, self.demo_mode, rate_configs["google_ai"])
         
         # Claude
         api_key = os.getenv("ANTHROPIC_API_KEY")
-        clients["claude"] = ClaudeAIClient(api_key, self.demo_mode)
+        clients["claude"] = ClaudeAIClient(api_key, self.demo_mode, rate_configs["claude"])
         
         return clients
     

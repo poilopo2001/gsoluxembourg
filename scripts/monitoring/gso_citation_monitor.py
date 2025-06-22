@@ -48,7 +48,7 @@ class GSACitationMonitor:
     - Claude AI (via API)
     """
     
-    def __init__(self, domain: str, config_path: str = None):
+    def __init__(self, domain: str, config_path: str = None) -> None:
         self.domain = domain
         self.config = gso_config  # Utilise config globale
         self.results_history = []
@@ -58,7 +58,7 @@ class GSACitationMonitor:
         demo_mode = os.getenv('GSO_MODE', 'demo') == 'demo'
         self.api_manager = AISearchManager(demo_mode=demo_mode)
         
-    def setup_logging(self):
+    def setup_logging(self) -> None:
         """Configuration logging avancé"""
         logging.basicConfig(
             level=logging.INFO,
@@ -70,7 +70,7 @@ class GSACitationMonitor:
         )
         self.logger = logging.getLogger(__name__)
         
-    def _get_scoring_config(self) -> Dict:
+    def _get_scoring_config(self) -> Dict[str, int]:
         """Récupère config scoring depuis config globale"""
         return self.config.scoring['citation_positions']
     

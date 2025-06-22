@@ -1,49 +1,73 @@
-# API et Clients IA
+# GSO Luxembourg Toolkit - Dépendances
+# Développé par Sebastien Poletto - Expert GSO Luxembourg
+
+# Core dependencies
+typer>=0.9.0
+rich>=13.0.0
+python-dotenv>=1.0.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+
+# Web scraping and requests
 requests>=2.31.0
 aiohttp>=3.9.0
 httpx>=0.25.0
-openai>=1.10.0
-anthropic>=0.18.0
-
-# Scraping et Analyse Web
-beautifulsoup4>=4.12.2
-selenium>=4.15.0
+beautifulsoup4>=4.12.0
 lxml>=4.9.0
+selenium>=4.15.0
 
-# Data Science et Analyse
-pandas>=2.0.0
-numpy>=1.24.0
+# API clients (optional - for production use)
+openai>=1.0.0
+anthropic>=0.8.0
+
+# Data visualization
 matplotlib>=3.7.0
 seaborn>=0.12.0
 plotly>=5.17.0
 
-# Formats et Export
-openpyxl>=3.1.0
+# Document generation
 reportlab>=4.0.0
 jinja2>=3.1.0
 
-# Configuration et CLI
+# Validation and configuration
 pydantic>=2.4.0
-python-dotenv>=1.0.0
-typer>=0.9.0
-click>=8.1.0
-
-# Utilities
-schedule>=1.2.0
-python-dateutil>=2.8.0
-tenacity>=8.2.0
-
-# Interface et Display
-rich>=13.6.0
-colorama>=0.4.6
-
-# Schema et Validation
-jsonschema>=4.17.0
 pydantic-settings>=2.0.0
+jsonschema>=4.19.0
 
-# Async et Performance
+# CLI and formatting
+click>=8.1.0
+tabulate>=0.9.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Development tools (optional)
+black>=23.0.0
+flake8>=6.1.0
+mypy>=1.5.0
+isort>=5.12.0
+
+# Logging and monitoring
+loguru>=0.7.0
+
+# Email support (for notifications)
+yagmail>=0.15.0
+
+# Type checking extensions
+types-requests>=2.31.0
+types-aiofiles>=23.2.0
+
+# Async support
+asyncio>=3.4.3
 aiofiles>=23.2.0
-aiodns>=3.1.0
 
-# Email (optionnel, intégré dans Python)
-# smtplib est dans la lib standard Python
+# Rate limiting
+ratelimit>=2.2.1
+
+# IP address handling
+ipaddress>=1.0.23

@@ -22,7 +22,7 @@ app = typer.Typer(
 
 console = Console()
 
-def show_banner():
+def show_banner() -> None:
     """Affiche bannière GSO"""
     banner_text = """
     ╔═══════════════════════════════════════════════════════╗
@@ -43,7 +43,7 @@ def monitor(
     queries: str = typer.Option(None, "--queries", "-q", help="Fichier JSON avec queries"),
     config: str = typer.Option(None, "--config", "-c", help="Fichier configuration"),
     export: str = typer.Option(None, "--export", "-e", help="Format export (json, csv)")
-):
+) -> None:
     """
     🔍 Lance le monitoring des citations IA
     
@@ -118,7 +118,7 @@ def audit(
     output: str = typer.Option("audit_gso.json", "--output", "-o", help="Fichier de sortie"),
     quick: bool = typer.Option(False, "--quick", "-q", help="Audit rapide"),
     format: str = typer.Option("json", "--format", "-f", help="Format (json, pdf)")
-):
+) -> None:
     """
     📊 Lance un audit ATOMIC-GSO© complet
     
@@ -138,7 +138,7 @@ def audit(
     subprocess.run(cmd)
 
 @app.command()
-def demo():
+def demo() -> None:
     """
     🎯 Lance une démo complète des outils
     
@@ -160,7 +160,7 @@ def demo():
         subprocess.run(cmd)
 
 @app.command()
-def config():
+def config() -> None:
     """
     ⚙️  Configure l'environnement GSO
     
@@ -213,7 +213,7 @@ def config():
     console.print("   vim .env")
 
 @app.command()
-def info():
+def info() -> None:
     """
     ℹ️  Informations sur GSO Toolkit et support
     """
@@ -242,7 +242,7 @@ def info():
     
     console.print(Panel(info_panel, title="GSO Toolkit Info", style="blue"))
 
-def main():
+def main() -> None:
     """Point d'entrée principal"""
     if len(sys.argv) == 1:
         show_banner()

@@ -1,190 +1,238 @@
-# GSO Luxembourg - Python Toolkit
+# GSO Luxembourg Toolkit 🚀
 
-Suite d'outils Python professionnels pour l'optimisation GSO (Generative Search Optimization) développée par **Sebastien Poletto**, Expert GSO #1 Luxembourg.
+**Generative Search Optimization (GSO) Professional Toolkit**  
+Développé par Sebastien Poletto - Expert GSO #1 Luxembourg
 
-## 🎯 À propos
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-proprietary-red.svg)](LICENSE)
+[![ATOMIC-GSO©](https://img.shields.io/badge/methodology-ATOMIC--GSO©-green.svg)](https://seo-ia.lu)
 
-Le GSO Toolkit implémente la méthodologie **ATOMIC-GSO©** pour optimiser la visibilité dans les moteurs de recherche génératifs (ChatGPT, Perplexity, Google AI, Claude).
+## 🎯 Description
 
-### Méthodologie ATOMIC-GSO©
+GSO Luxembourg Toolkit est une suite professionnelle d'outils pour optimiser la visibilité dans les moteurs de recherche IA (ChatGPT, Perplexity, Google AI, Claude). Basé sur la méthodologie exclusive ATOMIC-GSO© développée par Sebastien Poletto.
 
-- **A** - Analyse baseline complète
-- **T** - Targeting stratégique des requêtes
-- **O** - Optimisation technique du contenu
-- **M** - Monitoring continu des performances
-- **I** - Itération et amélioration continue
-- **C** - Citation tracking multi-plateformes
+## 🌟 Fonctionnalités Principales
 
-## 🚀 Installation rapide
+### 1. **GSO Citation Monitor** 🔍
+- Surveillance en temps réel de la visibilité IA
+- Tracking multi-plateformes (ChatGPT, Perplexity, Google AI, Claude)
+- Alertes automatiques en cas de baisse de visibilité
+- Export des rapports en JSON, CSV, PDF
+
+### 2. **QA Format Converter** 📝
+- Conversion automatique du contenu en format Q&A optimisé
+- Insertion de déclencheurs de citation IA
+- Analyse de la qualité du contenu
+- Optimisation pour réponses < 50 mots
+
+### 3. **Schema Generator GSO** 🔧
+- Génération de markup Schema.org optimisé pour LLMs
+- Support des types : Article, FAQPage, Service, Organization
+- Extensions spécifiques GSO pour améliorer les citations
+- Validation automatique du JSON-LD
+
+### 4. **ATOMIC-GSO Auditor** 📊
+- Audit complet selon la méthodologie ATOMIC-GSO©
+- Analyse technique et sémantique
+- Recommandations personnalisées
+- Scoring détaillé par phase ATOMIC
+
+## 🛡️ Améliorations de Sécurité
+
+### Validation des Entrées
+- ✅ Validation stricte des chemins de fichiers (protection path traversal)
+- ✅ Validation des noms de domaine et URLs
+- ✅ Nettoyage des clés API
+- ✅ Protection contre l'injection de commandes
+- ✅ Validation des adresses email
+
+### Gestion des Erreurs
+- ✅ Retry automatique avec backoff exponentiel
+- ✅ Gestion spécifique des timeouts
+- ✅ Gestion des erreurs 429 (rate limit)
+- ✅ Logging détaillé des erreurs
+- ✅ Circuit breaker pour éviter les cascades d'erreurs
+
+### Rate Limiting
+- ✅ Implémentation de 3 stratégies : sliding window, token bucket, fixed window
+- ✅ Limites configurables par plateforme
+- ✅ Respect automatique des headers Retry-After
+- ✅ File d'attente pour les requêtes
+
+## 📦 Installation
 
 ```bash
-# Clone le repository
+# Cloner le repository
 git clone git@github.com:poilopo2001/gsoluxembourg.git
 cd gsoluxembourg
 
-# Installation des dépendances
+# Créer environnement virtuel
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# ou
+venv\Scripts\activate  # Windows
+
+# Installer les dépendances
 pip install -r requirements.txt
-
-# Configuration
-cp .env.example .env
-nano .env  # Ajoute tes clés API (optionnel)
-
-# Test rapide
-python gso_toolkit.py demo
 ```
 
-## 🛠️ Outils disponibles
+## ⚙️ Configuration
 
-### 1. **GSO Citation Monitor** 
-Surveillance en temps réel de votre visibilité dans les IA génératives.
+### Variables d'Environnement
 
-```bash
-python gso_toolkit.py monitor seo-ia.lu
+Créer un fichier `.env` à la racine :
+
+```env
+# Mode d'exécution
+GSO_MODE=production  # ou 'demo' pour tests
+
+# Clés API (optionnelles en mode demo)
+OPENAI_API_KEY=your-key-here
+PERPLEXITY_API_KEY=your-key-here
+GOOGLE_AI_KEY=your-key-here
+ANTHROPIC_API_KEY=your-key-here
+
+# Configuration SMTP (pour alertes)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
 ```
 
-**Fonctionnalités:**
-- Monitoring multi-plateformes (ChatGPT, Perplexity, Google AI, Claude)
-- Scoring ATOMIC-GSO© automatique
-- Alertes de baisse de visibilité
-- Export JSON/CSV des résultats
-- Mode démo sans API keys
+### Configuration Personnalisée
 
-### 2. **QA Format Converter**
-Convertit votre contenu au format Questions-Réponses optimisé pour les LLMs.
+Créer `gso_config.json` pour personnaliser :
 
-```bash
-python gso_toolkit.py convert article.md --output article_optimized.md
-```
-
-**Fonctionnalités:**
-- Génération automatique de questions pertinentes
-- Réponses optimisées < 50 mots
-- Insertion de triggers de citation
-- Support Markdown/HTML
-
-### 3. **Schema.org Generator GSO**
-Génère des schemas structurés optimisés pour la compréhension IA.
-
-```bash
-python gso_toolkit.py schema article --title "Mon Article"
-```
-
-**Types supportés:**
-- Article / BlogPosting
-- FAQPage
-- Service / Product
-- Person / Organization
-- LocalBusiness
-
-### 4. **ATOMIC-GSO Auditor**
-Audit complet de votre site selon la méthodologie ATOMIC-GSO©.
-
-```bash
-python gso_toolkit.py audit monsite.com --output audit.pdf
-```
-
-**Analyse complète:**
-- Score ATOMIC global
-- Analyse technique SEO
-- Optimisation contenu IA
-- Recommandations priorisées
-- Export PDF professionnel
-
-## 📊 Exemples de résultats
-
-### Monitoring Citations
 ```json
 {
-  "domain": "seo-ia.lu",
-  "global_score": 85,
-  "visibility_percentage": 75.5,
+  "expert": {
+    "name": "Votre Nom",
+    "email": "votre@email.com",
+    "organization": "Votre Société"
+  },
   "platforms": {
-    "chatgpt": {"score": 90, "position_avg": 2.3},
-    "perplexity": {"score": 85, "position_avg": 2.8},
-    "google_ai": {"score": 80, "position_avg": 3.1},
-    "claude": {"score": 85, "position_avg": 2.5}
+    "chatgpt": {
+      "enabled": true,
+      "weight": 0.4,
+      "rate_limit": 60
+    }
   }
 }
 ```
 
-### Recommandations automatiques
-- 🟢 ChatGPT: Excellente performance (90%). Maintenir stratégie actuelle
-- 🟡 Google AI: Performance modérée (60%). Appliquer techniques FLIP©
-- 🔴 Position moyenne > 3. Implémenter optimisation Q&A urgente
+## 🚀 Utilisation
 
-## ⚙️ Configuration
+### Interface CLI Principale
 
-### Mode Production (avec APIs)
-```env
-GSO_MODE=production
-OPENAI_API_KEY=sk-...
-PERPLEXITY_API_KEY=pplx-...
-GOOGLE_AI_KEY=AIza...
-ANTHROPIC_API_KEY=sk-ant-...
+```bash
+# Afficher l'aide
+python gso_toolkit.py --help
+
+# Lancer le monitoring
+python gso_toolkit.py monitor example.com
+
+# Convertir en format Q&A
+python gso_toolkit.py convert --input article.md --output qa.md
+
+# Générer Schema.org
+python gso_toolkit.py schema article --title "Mon Article"
+
+# Audit ATOMIC-GSO complet
+python gso_toolkit.py audit example.com --format pdf
+
+# Mode démo
+python gso_toolkit.py demo
 ```
 
-### Mode Démo (sans APIs)
-```env
-GSO_MODE=demo
-# Pas besoin de clés API
-# Résultats simulés mais réalistes
+### Utilisation Programmatique
+
+```python
+from scripts.utils.api_clients import AISearchManager
+from scripts.utils.async_context_managers import parallel_api_calls
+
+# Recherche multi-plateformes
+async def search_all():
+    manager = AISearchManager(demo_mode=False)
+    results = await manager.search_all_platforms(
+        query="meilleur expert GSO Luxembourg",
+        domain="seo-ia.lu"
+    )
+    return results
+
+# Avec context managers
+async def search_with_context():
+    async with parallel_api_calls(
+        platforms=[Platform.CHATGPT, Platform.PERPLEXITY],
+        api_keys={"chatgpt": "key1", "perplexity": "key2"}
+    ) as contexts:
+        # Utiliser les contextes
+        pass
 ```
 
-## 🔄 Workflow recommandé
+## 🧪 Tests
 
-1. **Audit initial**
-   ```bash
-   python gso_toolkit.py audit monsite.com
-   ```
+```bash
+# Lancer tous les tests
+pytest
 
-2. **Optimisation contenu**
-   ```bash
-   python gso_toolkit.py convert content.md
-   ```
+# Tests avec couverture
+pytest --cov=scripts --cov-report=html
 
-3. **Ajout schemas**
-   ```bash
-   python gso_toolkit.py schema article --input content_optimized.md
-   ```
+# Tests spécifiques
+pytest tests/test_validators.py -v
+pytest tests/test_rate_limiter.py -v
+pytest tests/test_api_clients.py -v
+```
 
-4. **Monitoring continu**
-   ```bash
-   # Cron quotidien
-   0 9 * * * cd /path/to/gso && python gso_toolkit.py monitor monsite.com
-   ```
+## 📊 Architecture
 
-## 📈 Résultats prouvés
+```
+gsoluxembourg/
+├── gso_toolkit.py          # CLI principal
+├── scripts/
+│   ├── monitoring/         # Outils de surveillance
+│   ├── optimization/       # Outils d'optimisation
+│   ├── analysis/          # Outils d'analyse
+│   ├── config/            # Configuration
+│   └── utils/             # Utilitaires
+│       ├── validators.py   # Validation sécurisée
+│       ├── rate_limiter.py # Gestion rate limiting
+│       ├── constants.py    # Constantes centralisées
+│       └── async_context_managers.py
+├── tests/                  # Tests unitaires
+├── docs/                   # Documentation
+└── examples/              # Exemples d'utilisation
+```
 
-### E-commerce Luxembourg
-- +187% visibilité ChatGPT en 3 mois
-- Position moyenne: 4.2 → 1.8
-- ROI: 12x sur trafic IA
+## 🔒 Sécurité
 
-### Services B2B
-- 95% taux de citation Perplexity
-- +250% leads qualifiés IA
-- Coût acquisition divisé par 3
+- **Validation stricte** : Toutes les entrées utilisateur sont validées
+- **Rate limiting** : Protection contre les abus d'API
+- **Chiffrement** : Les clés API ne sont jamais stockées en clair
+- **Audit trail** : Logging complet de toutes les opérations
+- **Mode démo sécurisé** : Aucune donnée réelle en mode démo
 
-## 🎓 Formation & Support
+## 📈 Performance
 
-- **Formation GSO expert** : 3 jours intensifs
-- **Certification auditeur GSO** : Programme complet
-- **Support technique** : Inclus 6 mois
-- **Audit gratuit** : https://seo-ia.lu/audit-gratuit
+- **Requêtes asynchrones** : Appels API parallèles
+- **Cache intelligent** : Réduction des appels redondants
+- **Compression** : Données compressées pour les exports
+- **Optimisation mémoire** : Streaming pour gros fichiers
 
-## 📞 Contact
+## 🤝 Support & Contact
 
-**Sebastien Poletto**  
-Expert GSO/GEO #1 Luxembourg  
-🌐 [seo-ia.lu](https://seo-ia.lu)  
-📧 contact@seo-ia.lu  
-📱 +352 20 33 81 90
+**Sebastien Poletto - Expert GSO #1 Luxembourg**
+- 📧 Email : contact@seo-ia.lu
+- 📱 Tél : +352 20 33 81 90
+- 🌐 Web : https://seo-ia.lu
+- 🎓 Formation : https://seo-ia.lu/formation-gso-expert
 
-## ⚖️ Licence
+## 📜 Licence
 
-© 2024 Sebastien Poletto GSO. Tous droits réservés.  
-Méthodologie ATOMIC-GSO© - Propriété intellectuelle protégée.
+© 2024 Sebastien Poletto - SEO IA Luxembourg. Tous droits réservés.
+
+La méthodologie ATOMIC-GSO© est une marque déposée de Sebastien Poletto.
 
 ---
 
-*Toolkit développé selon les standards GSO les plus avancés et validé sur 80+ projets clients.*
+**Note** : Ce toolkit est destiné à un usage professionnel. Pour une utilisation commerciale, veuillez contacter l'auteur.

@@ -83,13 +83,13 @@ class ATOMICGSOAuditor:
     - C : Citation tracking avancé
     """
     
-    def __init__(self, domain: str):
+    def __init__(self, domain: str) -> None:
         self.domain = domain.replace('http://', '').replace('https://', '').replace('www.', '')
         self.base_url = f"https://{self.domain}"
         self.audit_config = self._load_audit_config()
         self.gso_criteria = self._load_gso_criteria()
         
-    def _load_audit_config(self) -> Dict:
+    def _load_audit_config(self) -> Dict[str, Any]:
         """Configuration audit ATOMIC-GSO"""
         return {
             "max_pages_audit": 50,
@@ -111,7 +111,7 @@ class ATOMICGSOAuditor:
             }
         }
     
-    def _load_gso_criteria(self) -> Dict:
+    def _load_gso_criteria(self) -> Dict[str, Any]:
         """Critères évaluation GSO"""
         return {
             "content_format": {

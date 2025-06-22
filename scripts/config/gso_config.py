@@ -8,9 +8,17 @@ Configuration globale pour tous les scripts GSO.
 
 import os
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 import json
+import sys
+
+# Ajouter le chemin parent pour importer les validateurs
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.validators import (
+    validate_file_path, validate_email, validate_api_key,
+    sanitize_filename, validate_json_safe
+)
 
 @dataclass
 class GSAExpertConfig:
@@ -63,7 +71,11 @@ class GSAConfig:
         """Retourne chemin config par défaut"""
         # Ordre recherche : env var, dossier courant, home
         if os.getenv('GSO_CONFIG'):
-            return os.getenv('GSO_CONFIG')
+            try:
+                path = validate_file_path(os.getenv('GSO_CONFIG'), must_exist=False)
+                return str(path)
+            except ValueError:
+                pass
         
         # Config dans dossier courant
         if Path('gso_config.json').exists():
@@ -247,6 +259,13 @@ class GSAConfig:
         if not api_key and platform == "demo":
             return "demo_key_for_testing"
         
+        # Valider la clé API si elle existe
+        if api_key:
+            try:
+                api_key = validate_api_key(api_key)
+            except ValueError as e:
+                raise ValueError(f"Clé API invalide pour {platform}: {e}")
+        
         return api_key
     
     def is_platform_enabled(self, platform: str) -> bool:
@@ -300,8 +319,10 @@ class GSAConfig:
         errors = []
         
         # Vérification emails
-        if not self.expert.email or '@' not in self.expert.email:
-            errors.append("Email expert invalide")
+        try:
+            validate_email(self.expert.email)
+        except ValueError as e:
+            errors.append(f"Email expert invalide: {e}")
         
         # Vérification poids plateformes
         total_weight = sum(p.weight for p in self.platforms.values() if p.enabled)
@@ -312,12 +333,24 @@ class GSAConfig:
         for name, path in self.paths.items():
             if not isinstance(path, Path):
                 errors.append(f"Chemin invalide : {name}")
+            else:
+                try:
+                    # Vérifier que le chemin parent existe
+                    if not path.parent.exists():
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                except Exception as e:
+                    errors.append(f"Impossible de créer le chemin {name}: {e}")
         
         # Vérification clés API si mode production
         if os.getenv('GSO_MODE') == 'production':
             for platform, config in self.platforms.items():
-                if config.enabled and not self.get_api_key(platform):
-                    errors.append(f"Clé API manquante : {platform}")
+                if config.enabled:
+                    try:
+                        key = self.get_api_key(platform)
+                        if not key:
+                            errors.append(f"Clé API manquante : {platform}")
+                    except ValueError as e:
+                        errors.append(str(e))
         
         return errors
 

@@ -59,14 +59,14 @@ class QAFormatConverter:
     - Structure hiérarchique optimisée
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.setup_logging()
         self.config = gso_config
         self.citation_triggers = self._load_citation_triggers()
         self.question_patterns = self._load_question_patterns()
         self.qa_config = self.config.optimization.get('qa_format', {})
         
-    def setup_logging(self):
+    def setup_logging(self) -> None:
         """Configuration logging"""
         logging.basicConfig(
             level=logging.INFO,

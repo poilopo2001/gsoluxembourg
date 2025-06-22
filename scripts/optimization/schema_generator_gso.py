@@ -47,7 +47,7 @@ class SchemaConfig:
     logo_url: str = None
     image_url: str = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialise avec config GSO si valeurs non fournies"""
         if not self.organization_name:
             self.organization_name = gso_config.expert.organization
@@ -78,11 +78,11 @@ class SchemaGeneratorGSO:
     - Organisations
     """
     
-    def __init__(self, config: SchemaConfig):
+    def __init__(self, config: SchemaConfig) -> None:
         self.config = config
         self.gso_extensions = self._load_gso_extensions()
         
-    def _load_gso_extensions(self) -> Dict:
+    def _load_gso_extensions(self) -> Dict[str, List[str]]:
         """Extensions Schema.org spécifiques GSO"""
         return {
             "gso_authority_signals": [
